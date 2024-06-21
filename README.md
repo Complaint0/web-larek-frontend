@@ -196,14 +196,14 @@ export type IUserValid = Pick<IUser, 'email' | 'phone' | 'address' | 'payment'>;
 
 ### Базовые классы
 
-#### Класс Component<T>
+#### Класс Component <T>
 Отвечает за общую функцоинальность отображений.
 Конструктор класса принимает HTMLElement объекта.
 
 Методы класса:
 - render(data?: Partial<T>): HTMLElement - отобржает изменение на странице
 
-#### Form<T>
+#### Form <T>
 Расширяет класс Component.
 Отвечает функциональность формы.
 Конструктор принимает HTMLElement и объект брокера событий.
