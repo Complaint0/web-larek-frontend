@@ -1,53 +1,57 @@
 export interface IProduct {
-    _id: string;
-    name: string;
-    category: string;
+    id: string;
+    image: string;
     description: string;
+    title: string;
+    category: string;
     price: number;
-    imageUrl: string;
 }
 
 export interface ICatalog {
     products: IProduct[];
     curProduct: string | null;
 
-    addProductToCatalog(product: IProduct): void;
-    getProductFromCatalog(id: string): IProduct;
+    getProductFromCatalog(): IProduct;
 }
 
 export interface IBasket {
-    products: IProduct[];
     addProductToBaseket(product: IProduct): void;
     deleteProductFromBaseket(id: string): void;
     getProductsFromBasket(): IProduct[];
     getTotalFromBasket(): number;
-    getCountProductsFromBasket(): number;
+    getProductsIdsFromBasket(): string[];
+    isBasketHaveProducts(): boolean;
+    getCountProductsFromBasket(): string;
+    clearBasket() : void;
 }
 
 export interface IUser {
-    addr: string;
+    address: string;
     email: string;
     phone:string;
     payment: string;
-    products: string[];
+    total: number;
+    items: string[] | null;
 }
 
 export interface IUserData {
     setUserProducts(ids: string[]): void;
-    setUserPayment(userData: IUserChoosePayment): void;
-    setUserEmail(userData: IUserEnterEmail): void;
-    checkUserValidation(data: Record<keyof IUser, string>): boolean;
+    getUserData(): void;
+    checkOrderValidation(data: Record<keyof IUserOrder, string>): boolean
+    checkContactsValidation(data: Record<keyof IUserContacts, string>): boolean
 }
 
-export type IUserChoosePayment = Pick<IUser, 'payment' | 'addr'>;
-export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>; 
+export type IUserOrder = Pick<IUser, 'payment' | 'address'>;
+export type IUserContacts = Pick<IUser, 'email' | 'phone'>; 
+
+
+export type IUserValid = Pick<IUser, 'email' | 'phone' | 'address' | 'payment'>; 
+
 
 export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
 
 export interface IApi {
     baseUrl: string;
-    getCards<T>(uri: string) : Promise<T>;
-    postOrder<T>(uri:string, data: object, method?: ApiPostMethods): Promise<T>;
+    get<T>(uri: string): Promise<T>;
+    post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
-
-

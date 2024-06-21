@@ -47,12 +47,12 @@ yarn build
 
 ```
 export interface IProduct {
-    _id: string;
-    name: string;
-    category: string;
+    id: string;
+    image: string;
     description: string;
+    title: string;
+    category: string;
     price: number;
-    imageUrl: string;
 }
 ```
 
@@ -60,11 +60,12 @@ export interface IProduct {
 
 ```
 export interface IUser {
-    addr: string;
+    address: string;
     email: string;
     phone:string;
     payment: string;
-    products: string[];
+    total: number;
+    items: string[] | null;
 }
 ```
 
@@ -78,6 +79,12 @@ export type IUserChoosePayment = Pick<IUser, 'payment' | 'addr'>;
 
 ```
 export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>; 
+```
+
+Данные, используемые для проверки валидации
+
+```
+export type IUserValid = Pick<IUser, 'email' | 'phone' | 'address' | 'payment'>; 
 ```
 
 ## Архитектура
@@ -117,11 +124,12 @@ export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>;
 
 ### Класс для работы с API
 
-#### Класс ProductAPI
-Данный класс наследуется от базового класса API. Необходим для типизации ответов и запросов на сервер.
+#### Класс AppAPI
+Необходим для типизации ответов и запросов на сервер.
+В констуктор принимает ссылку на сервер, а также часть ссылки для корректного отображения картинок. 
 
 Методы:
-- getProducts(): Promise<IProduct> - возврщает полученные с сервера товары
+- getProducts(): Promise<IProduct[]> - возврщает полученные с сервера товары
 - order(data: IUser): Promise<IUser> - возвращает ответ с сервера о статусе покупки
 
 
@@ -134,9 +142,11 @@ export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>;
 В полях класса хранятся следующие данные:
 - products: IProduct[] - массив объектов товаров
 - curProduct: string | null - id товара, выбранного для просмотра в модальной окне
+- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Так же класс предоставляет набор методов для взаимодействия с этими данными.
-- addProductToCatalog(product: IProduct): void - добавляет карточку в каталог.
+- get и set products - для установки и получения товаров
+- set curProduct - для установки выбранного товара
 - getProductFromCatalog(id: string): void - возвращает карточку по id.
 
 #### Класс UserData
@@ -144,147 +154,163 @@ export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>;
 Класс отвечает за хранение и логику работы с данными  пользователя.
 Конструктор класса принимает инстант брокера событий
 В полях класса хранятся следующие данные:
-- addr: string - адрес пользователя
+- address: string - адрес пользователя
 - email: string - почта пользоватя
 - phone: string - телефон пользоватя
 - payment: string - оплата пользоватя
 - products: string[] - id товаров пользоватя
+- total: number - сумма купленных товаров
 - events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Класс описывает набор методов для взаимодействия с данными пользователя.
-- setUserProducts(ids: string[]): void - сохраняет покупаемые продукты классе
-- setUserPayment(userData: IUserChoosePayment): void - сохраняет способ оплаты и адрес пользователя
-- setUserEmail(userData: IUserEnterEmail): void - сохраняет почту и телефон пользователя 
-- checkValidation(data: Record<keyof IUser, string>): boolean - проверяет объект с данными пользователя на валидность
+- setTotal(total: number) - устанавливает сумму заказа
+- getUserData(): IUser - для получения объекта заказа
+- setUserProducts(ids: string[]): void - сохраняет покупаемые товары
+- checkContactsValidation(): boolean - проверяет объект с контактами пользователя на валидность
+- checkOrderValidation(): boolean - проверяет объект с заказом пользователя на валидность
+- checkField(data: {field: keyof IUserValid, value: string}) - проверяет поле на валидность
+- checkEmail(value: string) - проверяет введеную почту на валидность
+- checkPhone(value: string) - проверяет введенный телефон на валидность
+- checkAddr(value: string) - проверяет введенный адрес на валидность
+- checkPayment(value: string) - проверяет введенный тип оплаты на валидность
+
 
 #### Класс Basket
 
 Класс отвечает за хранение и логику работы с корзиной товаров
 Конструктор класса принимает инстант брокера событий
 В полях класса хранятся следующие данные:
-- products: IProduct[] - товары, которые находятся в корзине
+- _products: IProduct[] - товары корзины
+- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Класс описывает набор методов для взаимодействия с корзиной.
 - addProductToBaseket(product: IProduct): void - добавить товар в корзину;
 - deleteProductFromBaseket(id: string): void - удалить товар из корзины;
 - getProductsFromBasket(): IProduct[] - получить списко товаров из корзины;
 - getTotalFromBasket(): number - получить обшую сумму товаров корзины;
+- getProductsIdsFromBasket(): string[] - для получения id покупаемых товаров
+- isBasketHaveProducts() - для проверки корзины на наличие товаров
 - getCountProductsFromBasket(): number - получить количество товаров в корзине;
 - clearBasket(): void - очистить корзину;
 
 
 ### Базовые классы
 
-#### Класс View<T>
+#### Класс Component<T>
 Отвечает за общую функцоинальность отображений.
+Конструктор класса принимает HTMLElement объекта.
 
 Методы класса:
 - render(data?: Partial<T>): HTMLElement - отобржает изменение на странице
-- toggle(element: HTMLElement, className: string, value?: boolean) - переключает класс
-- setText(element: HTMLElement, value: unknow) - устанавливает текст;
-- setImage(element: HTMLImageElement, src: string, alt? :string) - устанавливает картинк
 
 #### Form<T>
-Расширяет класс View. Отвечает функциональность формы.
-Конструктор принимает темплейт формы и объект брокера событий.
-- modal: HTMLElement - темплейт формы
-- formNameЖ ыекштп - значение атрибута name формы
-- submitButton: HTMLButtonElement - кнопка
-- inputs: NodeListOf<HTMLInputElement> - коллекция полйе ввода
-- errors: Record<string, HTMLElement> - объект хранязий ощибку под полями формы
+Расширяет класс Component.
+Отвечает функциональность формы.
+Конструктор принимает HTMLElement и объект брокера событий.
+
+Поля класса:
+- inputs: HTMLInputElement[] - массив полей ввода
+- submitButton: HTMLButtonElement - кнопка submit формы
+- modalActions: HTMLDivElement - div элемент кпонки submit и span'а для ошибок
+- formName - значение атрибута name формы
+- _error: HTMLElement - элемент для вывода ошибок
 
 Методы класса: 
-- setValid(isValid: boolean) - изменяет активность формы
-- getData(): Partial<IUser> - возвращает введенные данные
-- setError(data: { field: string, value: string, validInformation: string }): void - принимает объект с данными для отображения или сокрытия текстов ошибок под полями ввода
-- showInputError (field: string, errorMessage: string): void - отображает полученный текст ошибки под указанным полем ввода
-- hideInputError (field: string): void - очищает текст ошибки под указанным полем ввода
-- close (): void - расширяет родительский метод дополнительно при закрытии очищая поля формы и деактивируя кнопку сохранения
-- get form: HTMLElement - геттер для получения элемента формы
+- submitForm(evt: MouseEvent) - действия при submit формы
+- getInputValues() - возвращает введенные данные в инпуты
+- set error(text: string) - выводит в span текст ошибки
+- set valid(isValid: Boolean) - включает и отключает кнопку submit
 
 ### Классы отображения
 
 #### Класс Page
-Расширяет класс View. Реализует главную страницу.
-Конструктор класса получает базовый элемент разметки.
+Расширяет класс Component. Реализует главную страницу.
+Конструктор класса получает базовый элемент разметки и инстанс брокера событий.
+
 Содерижт следующие поля:
-- productsContainer: HTMLElement - контейнер карточки карточки
-- counterProductContainer: HTMLElement - элемент количества товаров в корзине
+- _catalog: HTMLElement - элемент в котором отобрада.тся карточки
+- _miniBasket: HTMLButtonElement - кнопка открытия корзины
+- _counter: HTMLElement - элемент вывода количества товаров в корзине
+- _wrapper: HTMLElement - обертка для отключения скрола при открытии модалки
 
 Содержит следующие методы:
-- setProductsTotal(value: number) - отображает количество продуктов в корзине
-- setProductList(items: HTMLElement[]) - отображает товары
+- set counter(count: string) - устанавливает количество товаров в корзине
+- set catalog(items: HTMLElement[]) - выводит каталог товаров
+- set locked(value: boolean) - блокирует скролл
 
 
 #### Класс Product
-Расщиряет класс View. Реализует элемент товара.
-Констркутор класса получает экземпляр брокера событий и темплейт карточки.
+Расщиряет класс Component. Реализует элемент товара.
+Констркутор класса получает экземпляр брокера событий и HTMLElement карточки.
+
+Содерижт следующие поля:
+- cardTitle: HTMLElement;
+- cardText: HTMLElement;
+- cardPrice: HTMLElement;
+- cardImage: HTMLImageElement;
+- cardId: string;
+- cardCategory: HTMLElement;
+- previewButton: HTMLButtonElement;
+- basketButton: HTMLButtonElement;
 
 Методы класса:
-- геттер id - возвращает уникальный идентификатор товара
-- setData(product: IProduct): void - заполняет карточку
-- render(): HTMLElement - возвращает товар с установленными слушателями
-
-
-#### Класс ProductsContainer
-Отвечает за отображение списка карточек на странцие. 
-В конструкто приманиет контейнер, в котором размещаются карточки.
-
-Методы:
-сеттер container для отображения содержимого
+содержит геттеры и сеттеры для установки всех элементов товара
 
 #### Класс Modal
-Расширяет класс View. Реализует модальное окно. Позволяет открыть соответсвующее содержимое темплейта в модально окно. Также предоставляет методы открытия и закрытия модального окна. 
+Расширяет класс Component. Реализует модальное окно. Позволяет открыть соответсвующее содержимое темплейта в модально окно. Также предоставляет методы открытия и закрытия модального окна. 
 Конструктом класса получает селектор HTML разметки, а также экземпляр класса `EventEmitter`.
 
 Поля класса:
-- modal: HTMLElement - элемент модального окна
+- closeButton: HTMLButtonElement - кнопка закрытия модалки
+- dataContainer: HTMLElement - элемент куда вставляется содержимое модалки
 - events: IEvents - брокер событий
 
 Методы:
-- setData(item: HTMLElement) - устанавливается содержимое модального окна
 - render(): HTMLElement - возвращает модалку с установленными слушателями
+- set item(item: HTMLElement) - устанавливает содержимое модалки
+- openModal() - открывает модалку 
+- closeModal() - закрывает модалку
 
-
-#### Класс Basket
-Реализует корзину страницы.
+#### Класс BasketView
+Расширяет класс Component. Реализует корзину.
 Конструктор класса получает базовый элемент разметки и объект брокера событий.
+
 Содерижт следующие поля:
-- productsContainer: HTMLElement - темплейт корзины
-- products: IProduct;
+- basketList : HTMLElement - элемент для отображения товаров
+- basketPrice : HTMLElement - элемент для отображения общей цены товаров
+- basketBuyButton : HTMLButtonElement - кнопка оформления
+
 
 Методы:
-- setBasket(item: IProduct): void - заполяет корзину данными
-- render(): HTMLElement - возвращает товар с установленными слушателями
+- set price(price: number) - выводит общую цены товаров корзины
+- set catalog(items: HTMLElement[]) - выводит товары в корзину
+- set basketBuyButtonState(value: boolean) - устанавливает состояние кнопки оформления
 
-#### Класс ChooseEmail
-Расширяет класс Form. Реализует форму ввода почты и адреса. Поля класса:
+#### Класс FormOrder
+Расширяет класс Form. Реализует форму ввода почты и адреса.
+Конструктор класса получает базовый элемент разметки и объект брокера событий.
 
-- email: string;
-- phone: string;
+Поля класса: 
+- buttons: HTMLButtonElement[] - кнопки выбора оплаты 
+
 Методы:
+- resetBtns() - сбрасывает выбранный способ оплаты
+- getInputValues() - возращает введенные значения
 
-- getChooseEmailForm(): HTMLElement - возвращает разметку формы ввода почты
+#### Класс ChoosFormContactsePayment
+Расширяет класс Form. Реалиузет формы выбора оплаты и ввода адреса.
+Конструктор класса получает базовый элемент разметки и объект брокера событий.
 
-#### Класс ChoosePayment
-Расширяет класс Form. Реалиузет формы выбора оплаты и ввода адреса. Поля класса:
-
-- payment: string
-- addr: string;
-Методы
-
-- getChoosePaymentForm(): HTMLElemnt - возвращает разметку формы выборы способа оплаты
-
-#### Класс PaymentSucces
-Реализует разметку успешной оплаты.
+#### Класс Succes
+Расширяет класс Component. Реализует разметку успешной оплаты.
 Конструктор класса получает базовый элемент разметки и брокер событий.
 
 Содерижт следующие поля:
-- productsContainer: HTMLElement - темплейт успешной оплаты
+- priceElement : HTMLElement - элемент для вывода суммы оплаты
+- button: HTMLButtonElement - кнопка подтверждения
 
 Методы:
-- setSucces(count: value): void - заполяет разметку данными
-- render(): HTMLElement - возвращает модалку с установленными слушателями
+- set price(price: string) - выводит суммы покупки
 
 
 ## Взаимодействие компонентов
@@ -294,18 +320,18 @@ export type IUserEnterEmail = Pick<IUser, 'email' | 'phone'>;
 
 *Список всех событий, которые могут генерироваться в системе:*\
 *События изменения данных (генерируются классами моделями данных)*
-- `basket:add` - добавление данных товара из корзины
-- `basket:delete` - удаление данных товара из корзины
-- `user:addPayment` - добавление данных пользотвалея об оплате и адресу
-- `user:addEmail` - добавление данных пользотвалея о почте и телефоне
-- `priduct:selected` - изменение открываемой в модальном окне картинки карточки
+- `basket:changed` - изменяет количество товаров корзины
+- `user:addProducts'` - добавление товаров в заказ
+- `products:add` - добавление товаров на страницу
+- `product:selected` - выбор товара для просмотра его в модалке
 
 
 *События, возникающие при взаимодействии пользователя с интерфейсом (генерируются классами, отвечающими за представление)*
-- `basket:open` - открытие модального окна корзины
-- `product:open` - открытие модального окна карточки
+- `basket:buy` - переход к форме ввода адреса и оплаты
+- `{formName}: input` - проверка пользовательского ввода на конкретной форме
+- `{formName}:fill` - переход к следущему шагу после успешного введния данных в формк
+- `basket:open` - открытие корзины с товарами
 - `baseket:add` - добавление товара в корзину
-- `basket:submit` - сохранение покупаемых товаров
-- `payment:submit` - сохранение адреса и способа оплаты
-- `email:submit` - сохранение почты и телефона оплаты
-- `succes:submit` - подтвержение успешной оплаты
+- `baseket:delete` - удаление товара из корзину
+- `product:select` - просмотр подробной информации о товаре
+- `succes:close` - подтверждения успешной оплаты заказа
