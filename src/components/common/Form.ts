@@ -31,12 +31,14 @@ export class Form<T> extends Component<T> {
             this.events.emit(`${this.formName}:input`, { field, value });
         });
 
-      
+        this.form.addEventListener('submit', (evt: SubmitEvent) => {
+            evt.preventDefault();
+            this.resetForm();
+            this.events.emit(`${this.formName}:fill`, this.getInputValues());
+        })
     }
 
-    protected submitForm(evt: MouseEvent) {
-        evt.preventDefault();
-        this.events.emit(`${this.formName}:fill`, this.getInputValues());
+    protected resetForm() {
         (this.container as HTMLFormElement).reset();
     }
 
@@ -50,11 +52,11 @@ export class Form<T> extends Component<T> {
     }
     
     set error(text: string) {
-        this._error.textContent = text;
+        this.setText(this._error, text)
     }
 
     set valid(isValid: Boolean) {
-		this.submitButton.disabled = !isValid;
+        this.setDisabled(this.submitButton, !isValid)
     }
 }
 

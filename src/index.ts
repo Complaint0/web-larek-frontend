@@ -5,7 +5,7 @@ import { Basket } from './components/Basket';
 import { EventEmitter } from './components/base/events';
 import { AppApi } from './components/AppApi';
 import { Api } from './components/base/api';
-import { API_URL, CDN_URL, settings } from './utils/constants';
+import { API_URL, CDN_URL, eventNames, settings } from './utils/constants';
 import { Product } from './components/View/Product';
 import { cloneTemplate, ensureElement } from './utils/utils';
 import { Modal } from './components/View/Modal';
@@ -16,11 +16,6 @@ import { Succes } from './components/View/Success';
 import { IUserContacts, IUserOrder, IUserValid } from './types';
 import { FormContacts } from './components/View/FormContacts';
 
-
-
-
-// !!! РАЗОБРАТЬСЯ С ВАЛИДАЦИЕЙ ФОРМЫ ТЕЛЕФОНА (CONSTANTS/constraintsEmail)
-// !!! после отрпавления с резетом кпонок оплаты
 
 const events = new EventEmitter();
 
@@ -60,14 +55,17 @@ const succes = new Succes(cloneTemplate(succesTemplate), events);
 
 
 
+
+
 api.getProducts()
     .then(data => {
         catalog.products = data
-});
+})
+    .catch((err) => console.log(err));
 
 
 
-events.on('products:add', () => {
+events.on(eventNames.productsAdd, () => {
     const productsArray = catalog.products.map((product) => {
         const productItem = new Product(cloneTemplate(productTemplate), events)
             return productItem.render(product);
@@ -75,63 +73,62 @@ events.on('products:add', () => {
     page.catalog = productsArray;
 })
 
-events.on('product:select', (data: {id : string}) => {
+events.on(eventNames.productSelect, (data: {id : string}) => {
     const { id } = data;
     catalog.curProduct = id;
 })
 
-events.on('product:selected', () => {
+events.on(eventNames.productSelected, () => {
     const curProduct = catalog.getProductFromCatalog();
     const productItem = productPreview.render(curProduct);
         modal.render({item: productItem});
 })
 
 
-events.on('basket:add', () => {
+events.on(eventNames.basketAdd, () => {
     modal.closeModal();
     basket.addProductToBaseket(catalog.getProductFromCatalog());
 })
 
 
-events.on('basket:changed', () => {
+events.on(eventNames.basketChanged, () => {
     page.counter = basket.getCountProductsFromBasket();
 })
 
-events.on('basket:delete', (data: {id: string}) => {
+events.on(eventNames.basketDelete, (data: {id: string}) => {
     const { id } = data;
     basket.deleteProductFromBaseket(id);
 
     renderBasketItems();
 })
 
-events.on('basket:open', () => {
+events.on(eventNames.basketOpen, () => {
     renderBasketItems();
 })
 
-events.on('basket:buy', () => {
+events.on(eventNames.basketBuy, () => {
     userData.setUserProducts(basket.getProductsIdsFromBasket());
     userData.setTotal(basket.getTotalFromBasket());
 })
 
-events.on('user:addProducts', () => {
+events.on(eventNames.userAddProducts, () => {
     modal.render({item: formOrder.render()});
 })
 
 
-events.on('order:input', (data: {field: keyof IUserValid, value: string}) => {
+events.on(eventNames.orderInput, (data: {field: keyof IUserValid, value: string}) => {
     const {field, value} = data;
-    console.log(field);
     formOrder.error = userData.checkField({field, value});
     formOrder.valid = userData.checkOrderValidation();
     console.log(userData.getUserData())
 })
 
-events.on('order:fill', (data: {address: string, payment: string}) => {
+events.on(eventNames.orderFill, () => {
     modal.render({item: formContacts.render()});
 });
 
 
-events.on('contacts:input', (data: {field: keyof IUserValid, value: string}) => {
+events.on(eventNames.contactsInput, (data: {field: keyof IUserValid, value: string}) => {
     const {field, value} = data;
     formContacts.error = userData.checkField({field , value});
     console.log(userData.getUserData())
@@ -139,36 +136,37 @@ events.on('contacts:input', (data: {field: keyof IUserValid, value: string}) => 
 })
 
 
-events.on('contacts:fill', () => {
+events.on(eventNames.contactsFill, () => {
     basket.deleteProductFromBaseket();
     api.sendOrder(userData.getUserData())
     .then(res => {
         const total = res.total;
         modal.render({item: succes.render({price: total})})
         basket.clearBasket();
-    });
+    })
+    .catch((err) => console.log(err));
 });
 
 
 
-events.on('succes:close', () => {
+events.on(eventNames.succesClose, () => {
     modal.closeModal();
 });
 
-events.on('modal:open', () => {
+events.on(eventNames.modalOpen, () => {
     page.locked = true;
 });
 
-events.on('modal:close', () => {
+events.on(eventNames.modalClose, () => {
     page.locked = false;
 });
 
 
 
 function renderBasketItems() {
-    const basketArray = basket.getProductsFromBasket().map((product) => {
+    const basketArray = basket.getProductsFromBasket().map((product, index) => {
         const basketItem = new Product(cloneTemplate(productBasketTemplate), events)
-            return basketItem.render(product);
+            return basketItem.render({...product, index: index + 1});
     });
 
     const baksetProducts = basketView.render({

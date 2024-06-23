@@ -1,3 +1,4 @@
+import { eventNames } from "../../utils/constants";
 import { ensureElement } from "../../utils/utils";
 import { Component } from "../base/Component";
 import { IEvents } from "../base/events";
@@ -23,7 +24,8 @@ export class Modal extends Component<IModal> {
         this.container.addEventListener('mousedown', (evt)=> {
             if (evt.target === evt.currentTarget)
                 this.closeModal();
-        } )
+        })
+        this.handleEspace = this.handleEspace.bind(this);
     }
 
     render(data: IModal): HTMLElement {
@@ -37,12 +39,24 @@ export class Modal extends Component<IModal> {
     }
 
     openModal() {
-        this.container.classList.add('modal_active');
-        this.events.emit('modal:open');
+        this.toggleModal()
+        document.addEventListener('keydown', this.handleEspace);
+        this.events.emit(eventNames.modalOpen);
     }
 
     closeModal() {
-        this.container.classList.remove('modal_active');
-        this.events.emit('modal:close');
+        this.toggleModal(false)
+        document.removeEventListener('keydown', this.handleEspace);
+        this.events.emit(eventNames.modalClose);
+    }
+
+    protected toggleModal(state: boolean = true) {
+        this.toggleClass(this.container, 'modal_active', state);
+    }
+
+    protected handleEspace(evt: KeyboardEvent) {
+        if (evt.key === `Escape`) {
+            this.closeModal();
+        }
     }
 }

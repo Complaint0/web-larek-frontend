@@ -1,3 +1,4 @@
+import { eventNames } from "../../utils/constants";
 import { ensureElement } from "../../utils/utils";
 import { Component } from "../base/Component";
 import { IEvents } from "../base/events";
@@ -26,13 +27,13 @@ export class Page extends Component<IPage> {
         this._counter = ensureElement('.header__basket-counter', this._miniBasket);
 
         this._miniBasket.addEventListener('click', () => {
-            this.events.emit('basket:open');
+            this.events.emit(eventNames.basketOpen);
         })
     }
 
     
     set counter(count: string) {
-        this._counter.textContent = count;
+        this.setText(this._counter, count)
     }
 
     set catalog(items: HTMLElement[]) {
@@ -41,9 +42,9 @@ export class Page extends Component<IPage> {
     
     set locked(value: boolean) {
         if (value) {
-            this._wrapper.classList.add('page__wrapper_locked');
+            this.toggleClass(this._wrapper, 'page__wrapper_locked', true)
         } else {
-            this._wrapper.classList.remove('page__wrapper_locked');
+            this.toggleClass(this._wrapper, 'page__wrapper_locked', false)
         }
     }
 }

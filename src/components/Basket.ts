@@ -1,4 +1,5 @@
 import { IBasket, IProduct } from "../types";
+import { eventNames } from "../utils/constants";
 import { IEvents } from "./base/events";
 
 export class Basket implements IBasket {
@@ -14,7 +15,7 @@ export class Basket implements IBasket {
         const isProductInBasket = this._products.find((item) => item.id === product.id);
         if (!isProductInBasket) {
             this._products = [product, ...this._products];
-            this.events.emit('basket:changed');
+            this.events.emit(eventNames.basketChanged);
         }
     }
 
@@ -25,7 +26,7 @@ export class Basket implements IBasket {
         else 
             this._products = [];
         
-        this.events.emit('basket:changed');
+        this.events.emit(eventNames.basketChanged);
     }
 
     getProductsFromBasket(): IProduct[] {

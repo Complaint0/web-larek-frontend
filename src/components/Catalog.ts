@@ -1,5 +1,5 @@
 import { ICatalog, IProduct } from "../types"
-import { CDN_URL } from "../utils/constants";
+import { CDN_URL, eventNames } from "../utils/constants";
 import { IEvents } from "./base/events";
 
 export class Catalog implements ICatalog {
@@ -18,12 +18,12 @@ export class Catalog implements ICatalog {
 
     set products(products: IProduct[]) {
         this._products = products;
-        this.events.emit('products:add');
+        this.events.emit(eventNames.productsAdd);
     }
 
     set curProduct(curProduct: string) {
         this._curProduct = curProduct;
-        this.events.emit('product:selected');
+        this.events.emit(eventNames.productSelected);
     }
 
     getProductFromCatalog(): IProduct {

@@ -1,7 +1,7 @@
 import validate from "validate.js";
 import { IUser, IUserOrder, IUserData, IUserContacts, IUserValid } from "../types";
 import { IEvents } from "./base/events";
-import { constraintsContacts, constraintsOrder } from "../utils/constants";
+import { constraintsContacts, constraintsOrder, eventNames } from "../utils/constants";
 
 export class UserData implements IUserData {
     protected address: string;
@@ -26,7 +26,7 @@ export class UserData implements IUserData {
 
     setUserProducts(ids: string[]): void {
         this.items = ids;
-        this.events.emit('user:addProducts');
+        this.events.emit(eventNames.userAddProducts);
     }
 
     checkContactsValidation(): boolean {

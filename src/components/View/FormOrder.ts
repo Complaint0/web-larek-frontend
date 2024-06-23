@@ -14,20 +14,20 @@ export class FormOrder extends Form<IForm> {
             btn.addEventListener('click', (evt) => {
                 this.resetBtns();
                 const curBtn = evt.target as HTMLElement;
-                curBtn.classList.add('button_alt-active');
+                this.toggleClass(curBtn, 'button_alt-active');
                 this.events.emit(`${this.formName}:input`, { field: 'payment', value: curBtn.textContent});
             })
         })
+    }
 
-         this.submitButton.addEventListener('click', (evt) => {
-          super.submitForm(evt);
-          this.resetBtns();
-        })
+    protected resetForm(): void {
+        super.resetForm();
+        this.resetBtns();
     }
 
     protected resetBtns() {
         this.buttons.forEach((btn) => {
-            btn.classList.remove('button_alt-active');
+            this.toggleClass(btn, 'button_alt-active', false)
         })
     }
 

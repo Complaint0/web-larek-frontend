@@ -1,3 +1,4 @@
+import { eventNames } from "../../utils/constants";
 import { ensureElement } from "../../utils/utils";
 import { Component } from "../base/Component";
 import { IEvents } from "../base/events";
@@ -18,11 +19,11 @@ export class Succes extends Component<ISucces> {
         this.button = ensureElement<HTMLButtonElement>('.order-success__close', this.container);
 
         this.button.addEventListener('click', () => {
-            events.emit('succes:close');
+            events.emit(eventNames.succesClose);
         })
     }
 
     set price(price: string) {
-        this.priceElement.textContent = `Списано ${price} синапсов`;
+        this.setText(this.priceElement, `Списано ${price} синапсов`)
     }
 }
